@@ -46,6 +46,7 @@ type StreamBouncer struct {
 	ScenariosContaining    []string `yaml:"scenarios_containing"`
 	ScenariosNotContaining []string `yaml:"scenarios_not_containing"`
 	Origins                []string `yaml:"origins"`
+        Startup                bool `yaml:"startup"`
 
 	TickerIntervalDuration time.Duration
 	Stream                 chan *models.DecisionsStreamResponse
@@ -200,7 +201,7 @@ func (b *StreamBouncer) Init() error {
 func (b *StreamBouncer) Run(ctx context.Context) {
 	ticker := time.NewTicker(b.TickerIntervalDuration)
 
-	b.Opts.Startup = true
+	b.Opts.Startup = b.Startup
 
 	getDecisionStream := func() (*models.DecisionsStreamResponse, *apiclient.Response, error) {
 		data, resp, err := b.APIClient.Decisions.GetStream(context.Background(), b.Opts)
@@ -226,7 +227,7 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 	}
 
 	b.Stream <- data
-	b.Opts.Startup = false
+        b.Opts.Startup = false
 	for {
 		select {
 		case <-ctx.Done():
