@@ -1,4 +1,4 @@
-module github.com/crowdsecurity/go-cs-bouncer
+module github.com/asians-cloud/go-cs-bouncer
 
 go 1.20
 
