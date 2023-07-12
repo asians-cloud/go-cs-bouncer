@@ -6,8 +6,8 @@ github.com/antonmedv/expr v1.12.5/go.mod h1:FPC8iWArxls7axbVLsW+kpg1mz29A1b2M6jt
 github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
-github.com/asians-cloud/crowdsec v1.5.2 h1:YObv3XhmeSJO97aD1kQvMTPbCB2/TCTRUQeA7s2Wwj4=
-github.com/asians-cloud/crowdsec v1.5.2/go.mod h1:sJidntf3DbmJp4Mh81aEegagot02jUqOrA8xh2cCBCw=
+github.com/asians-cloud/crowdsec v1.5.3 h1:VLO4UArOYYMnIKhiBLA3MYD5uyAB8ejU31vcHo18HQ8=
+github.com/asians-cloud/crowdsec v1.5.3/go.mod h1:sJidntf3DbmJp4Mh81aEegagot02jUqOrA8xh2cCBCw=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=

@@ -144,7 +144,7 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 	b.Opts.Startup = b.Startup
 
 	getDecisionStream := func() (*models.DecisionsStreamResponse, *apiclient.Response, error) {
-		data, resp, err := b.APIClient.Decisions.StreamDecisions(context.Background(), b.Opts)
+		data, resp, err := b.APIClient.Decisions.GetStream(context.Background(), b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
@@ -190,22 +190,16 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 }
 
 func (b *StreamBouncer) RunStream(ctx context.Context) {
-	b.Opts.Startup = b.Startup
-
-	getDecisionStream := func() (*models.DecisionsStreamResponse, *apiclient.Response, error) {
-		data, resp, err := b.APIClient.Decisions.GetStream(context.Background(), b.Opts)
+	getDecisionStream := func() (*apiclient.Response, error) {
+		resp, err := b.APIClient.Decisions.StreamDecisions(context.Background(), b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
 		}
-		return data, resp, err
+		return resp, err
 	}
 
-	data, resp, err := getDecisionStream()
-
-	if resp != nil && resp.Response != nil {
-		resp.Response.Body.Close()
-	}
+	resp, err := getDecisionStream()
 
 	if err != nil {
 		log.Error(err)
@@ -214,9 +208,8 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		close(b.Stream)
 		return
 	}
+        defer resp.Response.Body.Close()
 
-	b.Stream <- data
-	b.Opts.Startup = false
 	decoder := json.NewDecoder(resp.Response.Body)
 	for {
 		select {
@@ -224,9 +217,6 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 			return
 		default:
 			var data models.DecisionsStreamResponse
-			if resp != nil && resp.Response != nil {
-				resp.Response.Body.Close()
-			}
 
 			// Decode each JSON object
 			if err := decoder.Decode(&data); err != nil {
@@ -234,9 +224,6 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 				return
 			}
 			if err != nil {
-				if resp != nil && resp.Response != nil {
-					resp.Response.Body.Close()
-				}
 				log.Errorf(err.Error())
 				continue
 			}
