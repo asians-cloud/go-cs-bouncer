@@ -217,13 +217,13 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
 	b.Stream <- data
 	b.Opts.Startup = false
-	decoder := json.NewDecoder(resp.Body)
+	decoder := json.NewDecoder(resp.Response.Body)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			data := make(map[string][]*models.Decision, 0)
+			var data models.DecisionsStreamResponse
 			if resp != nil && resp.Response != nil {
 				resp.Response.Body.Close()
 			}
@@ -241,7 +241,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 				continue
 			}
 
-			b.Stream <- data
+			b.Stream <- &data
 		}
 	}
 }
