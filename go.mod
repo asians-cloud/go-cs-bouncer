@@ -3,18 +3,19 @@ module github.com/asians-cloud/go-cs-bouncer
 go 1.20
 
 require (
-	github.com/asians-cloud/crowdsec v1.5.1
+	github.com/crowdsecurity/crowdsec v1.5.1
 	github.com/prometheus/client_golang v1.15.1
 	github.com/sirupsen/logrus v1.9.2
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/crowdsecurity/crowdsec v1.5.1 => github.com/asians-cloud/crowdsec v1.5.1
 
 require (
 	github.com/antonmedv/expr v1.12.5 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/crowdsecurity/go-cs-lib v0.0.0-20230522124854-671e895fa788 // indirect
 	github.com/crowdsecurity/grokky v0.2.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/go-openapi/analysis v0.21.4 // indirect
@@ -29,6 +30,7 @@ require (
 	github.com/goccy/go-yaml v1.11.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/hashicorp/go-version v1.2.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -41,6 +43,7 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.0 // indirect
+	github.com/stretchr/testify v1.8.3 // indirect
 	github.com/tetratelabs/wazero v1.1.0 // indirect
 	github.com/wasilibs/go-re2 v1.1.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.6 // indirect

@@ -10,8 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"github.com/asians-cloud/crowdsec/pkg/apiclient"
-	"github.com/asians-cloud/crowdsec/pkg/models"
+	"github.com/crowdsecurity/crowdsec/pkg/apiclient"
+	"github.com/crowdsecurity/crowdsec/pkg/models"
 )
 
 type LiveBouncer struct {

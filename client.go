@@ -10,7 +10,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/asians-cloud/crowdsec/pkg/apiclient"
+	"github.com/crowdsecurity/crowdsec/pkg/apiclient"
 )
 
 func getApiClient(urlstr string, userAgent string, apiKey string, caPath string, certPath string, keyPath string, skipVerify *bool, logger logrus.FieldLogger) (*apiclient.ApiClient, error) {
