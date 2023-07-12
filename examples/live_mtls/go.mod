@@ -11,7 +11,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/crowdsecurity/crowdsec v1.5.2 // indirect
+	github.com/asians-cloud/crowdsec v1.5.1 // indirect
 	github.com/crowdsecurity/go-cs-lib v0.0.0-20230522124854-671e895fa788 // indirect
 	github.com/crowdsecurity/grokky v0.2.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect

@@ -7,13 +7,14 @@ import (
 	"os"
 	"strings"
 	"time"
+        "encoding/json"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"github.com/crowdsecurity/crowdsec/pkg/apiclient"
-	"github.com/crowdsecurity/crowdsec/pkg/models"
+	"github.com/asians-cloud/crowdsec/pkg/apiclient"
+	"github.com/asians-cloud/crowdsec/pkg/models"
 )
 
 var TotalLAPIError prometheus.Counter = prometheus.NewCounter(prometheus.CounterOpts{
@@ -143,7 +144,7 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 	b.Opts.Startup = b.Startup
 
 	getDecisionStream := func() (*models.DecisionsStreamResponse, *apiclient.Response, error) {
-		data, resp, err := b.APIClient.Decisions.GetStream(context.Background(), b.Opts)
+		data, resp, err := b.APIClient.Decisions.StreamDecisions(context.Background(), b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
@@ -183,6 +184,63 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 			if resp != nil && resp.Response != nil {
 				resp.Response.Body.Close()
 			}
+			b.Stream <- data
+		}
+	}
+}
+
+func (b *StreamBouncer) RunStream(ctx context.Context) {
+	b.Opts.Startup = b.Startup
+
+	getDecisionStream := func() (*models.DecisionsStreamResponse, *apiclient.Response, error) {
+		data, resp, err := b.APIClient.Decisions.GetStream(context.Background(), b.Opts)
+		TotalLAPICalls.Inc()
+		if err != nil {
+			TotalLAPIError.Inc()
+		}
+		return data, resp, err
+	}
+
+	data, resp, err := getDecisionStream()
+
+	if resp != nil && resp.Response != nil {
+		resp.Response.Body.Close()
+	}
+
+	if err != nil {
+		log.Error(err)
+		// close the stream
+		// this may cause the bouncer to exit
+		close(b.Stream)
+		return
+	}
+
+	b.Stream <- data
+        b.Opts.Startup = false
+        decoder := json.NewDecoder(resp.Body)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+                        data := make(map[string][]*models.Decision, 0) 
+                        if resp != nil && resp.Response != nil {
+				resp.Response.Body.Close()
+			}
+
+                        // Decode each JSON object
+                        if err := decoder.Decode(&data); err != nil {
+                                fmt.Println("Error decoding JSON:", err)
+                                return
+                        }
+			if err != nil {
+				if resp != nil && resp.Response != nil {
+					resp.Response.Body.Close()
+				}
+				log.Errorf(err.Error())
+				continue
+			}
+			
 			b.Stream <- data
 		}
 	}

@@ -3,7 +3,7 @@ module github.com/asians-cloud/go-cs-bouncer
 go 1.20
 
 require (
-	github.com/crowdsecurity/crowdsec v1.5.2
+	github.com/asians-cloud/crowdsec v1.5.1
 	github.com/prometheus/client_golang v1.15.1
 	github.com/sirupsen/logrus v1.9.2
 	gopkg.in/yaml.v2 v2.4.0
