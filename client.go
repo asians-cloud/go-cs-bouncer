@@ -30,7 +30,7 @@ func (c *Client) addQueryParamsToURL(url string, opts apiclient.DecisionsStreamO
 }
 
 func (c *Client) StreamDecisionConnect(ctx context.Context, opts apiclient.DecisionsStreamOpts) (*http.Response, error) {
-  url, err := c.addQueryParamsToURL(c.URL + "/decisions-stream", opts)
+  url, err := c.addQueryParamsToURL(c.URL + "v1/decisions-stream", opts)
   if err != nil {
     return nil, err
   }
