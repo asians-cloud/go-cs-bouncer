@@ -190,16 +190,23 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 }
 
 func (b *StreamBouncer) RunStream(ctx context.Context) {
-	getDecisionStream := func() (*apiclient.Response, error) {
-		resp, err := b.APIClient.Decisions.StreamDecisions(context.Background(), b.Opts)
+	getDecoder := func(ctx context.Context) (*json.Decoder, error) {
+		resp, err := b.APIClient.Decisions.StreamDecisions(ctx, b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
+                        return nil, err
 		}
-		return resp, err
+                defer resp.Response.Body.Close()
+      
+                log.Info(resp)
+                log.Info(resp.Response)
+                log.Info(resp.Response.Body)
+                decoder := json.NewDecoder(resp.Response.Body)
+		return decoder, err
 	}
 
-	resp, err := getDecisionStream()
+	decoder, err := getDecoder(ctx)
 
 	if err != nil {
 		log.Error(err)
@@ -208,12 +215,6 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		close(b.Stream)
 		return
 	}
-        defer resp.Response.Body.Close()
-      
-        log.Info(resp)
-        log.Info(resp.Response)
-        log.Info(resp.Response.Body)
-	decoder := json.NewDecoder(resp.Response.Body)
 	for {
 		select {
 		case <-ctx.Done():
@@ -222,51 +223,17 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
                         data := &models.DecisionsStreamResponse{
                           New: []*models.Decision{}, 
                           Deleted: []*models.Decision{},
-                        } 
-
-                        if resp == nil {
-                          resp, err := getDecisionStream()
-
-                          if err != nil {
-                                  log.Error(err)
-                                  // close the stream
-                                  // this may cause the bouncer to exit
-                                  close(b.Stream)
-                                  return
-                          }
-                          defer resp.Response.Body.Close()
-                        
-                          log.Info(resp)
-                          log.Info(resp.Response)
-                          log.Info(resp.Response.Body)
-                          decoder = json.NewDecoder(resp.Response.Body)
-                        }
-
-                        if resp.Response == nil {
-                          resp, err := getDecisionStream()
-
-                          if err != nil {
-                                  log.Error(err)
-                                  // close the stream
-                                  // this may cause the bouncer to exit
-                                  close(b.Stream)
-                                  return
-                          }
-                          defer resp.Response.Body.Close()
-                        
-                          log.Info(resp)
-                          log.Info(resp.Response)
-                          log.Info(resp.Response.Body)
-                          decoder = json.NewDecoder(resp.Response.Body)
                         }
 
 			// Decode each JSON object
 			if err := decoder.Decode(data); err != nil {
 				log.Error("Error decoding JSON:", err)
-				return
-			}
-			if err != nil {
-				log.Errorf(err.Error())
+                                decoder , err = getDecoder(ctx)
+                                if err != nil {
+                                  log.Error(err)
+                                  close(b.Stream)
+                                  return
+                                }
 				continue
 			}
 
