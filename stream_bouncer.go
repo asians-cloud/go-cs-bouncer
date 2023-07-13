@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+        "net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -197,22 +198,18 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 }
 
 func (b *StreamBouncer) RunStream(ctx context.Context) {
-	getDecoder := func(ctx context.Context) (*json.Decoder, error) {
+	getDecoder := func(ctx context.Context) (*json.Decoder, *http.Response, error) {
 		resp, err := b.STREAMClient.StreamDecisionConnect(ctx, b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
-                        return nil, err
+                        return nil, nil, err
 		}
-                defer resp.Body.Close()
-      
-                log.Info(resp)
-                log.Info(resp.Body)
                 decoder := json.NewDecoder(resp.Body)
-		return decoder, err
+		return decoder, resp, err
 	}
 
-	decoder, err := getDecoder(ctx)
+	decoder, resp, err := getDecoder(ctx)
 
 	if err != nil {
 		log.Error(err)
@@ -224,7 +221,10 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+                  if resp != nil {
+                    resp.Body.Close()
+                  }
+		  return
 		default:
                         data := &models.DecisionsStreamResponse{
                           New: []*models.Decision{}, 
@@ -234,7 +234,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 			// Decode each JSON object
 			if err := decoder.Decode(data); err != nil {
 				log.Error("Error decoding JSON:", err)
-                                decoder , err = getDecoder(ctx)
+                                decoder, resp , err = getDecoder(ctx)
                                 if err != nil {
                                   log.Error(err)
                                   close(b.Stream)
