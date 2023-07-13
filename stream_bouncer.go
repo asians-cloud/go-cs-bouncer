@@ -216,11 +216,11 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			var data models.DecisionsStreamResponse
+                        var data models.DecisionsStreamResponse
 
 			// Decode each JSON object
 			if err := decoder.Decode(&data); err != nil {
-				fmt.Println("Error decoding JSON:", err)
+				log.Error("Error decoding JSON:", err)
 				return
 			}
 			if err != nil {
@@ -228,6 +228,8 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 				continue
 			}
 
+                        log.Info(data)
+                        
 			b.Stream <- &data
 		}
 	}
