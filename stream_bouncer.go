@@ -228,7 +228,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 				continue
 			}
 
-                        log.Info(data)
+                        log.Info("Recieved data: ", data)
                         
 			b.Stream <- &data
 		}
