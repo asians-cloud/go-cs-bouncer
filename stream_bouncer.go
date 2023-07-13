@@ -216,10 +216,13 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-                        var data models.DecisionsStreamResponse
+                        data := &models.DecisionsStreamResponse{
+                          New: []*models.Decision{}, 
+                          Deleted: []*models.Decision{},
+                        }
 
 			// Decode each JSON object
-			if err := decoder.Decode(&data); err != nil {
+			if err := decoder.Decode(data); err != nil {
 				log.Error("Error decoding JSON:", err)
 				return
 			}
@@ -230,7 +233,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
                         log.Info("Recieved data: ", data)
                         
-			b.Stream <- &data
+			b.Stream <- data
 		}
 	}
 }
