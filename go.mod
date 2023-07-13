@@ -3,7 +3,8 @@ module github.com/asians-cloud/go-cs-bouncer
 go 1.20
 
 require (
-	github.com/asians-cloud/crowdsec v1.5.4
+	github.com/asians-cloud/crowdsec v1.5.6
+	github.com/google/go-querystring v1.1.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/sirupsen/logrus v1.9.2
 	gopkg.in/yaml.v2 v2.4.0
@@ -27,7 +28,6 @@ require (
 	github.com/go-openapi/validate v0.22.1 // indirect
 	github.com/goccy/go-yaml v1.11.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-version v1.2.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
