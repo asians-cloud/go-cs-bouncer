@@ -47,6 +47,7 @@ type StreamBouncer struct {
 	TickerIntervalDuration time.Duration
 	Stream                 chan *models.DecisionsStreamResponse
 	APIClient              *apiclient.ApiClient
+        STREAMClient           *Client
 	UserAgent              string
 	Opts                   apiclient.DecisionsStreamOpts
 }
@@ -135,6 +136,12 @@ func (b *StreamBouncer) Init() error {
 	if err != nil {
 		return fmt.Errorf("api client init: %w", err)
 	}
+
+        b.STREAMClient = &Client{
+          URL:       b.APIUrl,
+          APIKey:    b.APIKey,
+          UserAgent: b.UserAgent,
+        }
 	return nil
 }
 
@@ -191,18 +198,17 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 
 func (b *StreamBouncer) RunStream(ctx context.Context) {
 	getDecoder := func(ctx context.Context) (*json.Decoder, error) {
-		resp, err := b.APIClient.Decisions.StreamDecisions(ctx, b.Opts)
+		resp, err := b.STREAMClient.StreamDecisionConnect(ctx, b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
                         return nil, err
 		}
-                defer resp.Response.Body.Close()
+                defer resp.Body.Close()
       
                 log.Info(resp)
-                log.Info(resp.Response)
-                log.Info(resp.Response.Body)
-                decoder := json.NewDecoder(resp.Response.Body)
+                log.Info(resp.Body)
+                decoder := json.NewDecoder(resp.Body)
 		return decoder, err
 	}
 

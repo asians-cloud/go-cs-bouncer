@@ -1,6 +1,7 @@
 package csbouncer
 
 import (
+        "context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -9,9 +10,51 @@ import (
 	"net/url"
 
 	"github.com/sirupsen/logrus"
+        qs "github.com/google/go-querystring/query"
 
 	"github.com/asians-cloud/crowdsec/pkg/apiclient"
 )
+
+type Client struct {
+  URL       string
+  APIKey    string
+  UserAgent string
+}
+
+func (c *Client) addQueryParamsToURL(url string, opts apiclient.DecisionsStreamOpts) (string, error) {
+    params, err := qs.Values(opts)
+    if err != nil {
+            return "", err
+    }
+    return fmt.Sprintf("%s?%s", url, params.Encode()), nil
+}
+
+func (c *Client) StreamDecisionConnect(ctx context.Context, opts apiclient.DecisionsStreamOpts) (*http.Response, error) {
+  url, err := c.addQueryParamsToURL(c.URL + "/decisions-stream", opts)
+  if err != nil {
+    return nil, err
+  }
+
+  req, err := http.NewRequest(http.MethodGet, url, nil)
+  if err != nil {
+    return nil, err
+  }
+
+  req.Header.Set("Cache-Control", "no-cache")
+  req.Header.Set("Accept", "text/event-stream")
+  req.Header.Set("Connection", "keep-alive")
+  req.Header.Set("X-Api-Key", c.APIKey)
+  req.Header.Set("User-Agent", c.UserAgent)
+  req.Header.Set("Content-Type", "application/json")
+
+  client := &http.Client{}
+  resp, err := client.Do(req)
+  if err != nil {
+    return nil, err
+  }
+
+  return resp, nil
+}
 
 func getApiClient(urlstr string, userAgent string, apiKey string, caPath string, certPath string, keyPath string, skipVerify *bool, logger logrus.FieldLogger) (*apiclient.ApiClient, error) {
 	var (
