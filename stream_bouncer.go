@@ -209,7 +209,10 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		return
 	}
         defer resp.Response.Body.Close()
-
+      
+        log.Info(resp)
+        log.Info(resp.Response)
+        log.Info(resp.Response.Body)
 	decoder := json.NewDecoder(resp.Response.Body)
 	for {
 		select {
@@ -219,6 +222,42 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
                         data := &models.DecisionsStreamResponse{
                           New: []*models.Decision{}, 
                           Deleted: []*models.Decision{},
+                        } 
+
+                        if resp == nil {
+                          resp, err := getDecisionStream()
+
+                          if err != nil {
+                                  log.Error(err)
+                                  // close the stream
+                                  // this may cause the bouncer to exit
+                                  close(b.Stream)
+                                  return
+                          }
+                          defer resp.Response.Body.Close()
+                        
+                          log.Info(resp)
+                          log.Info(resp.Response)
+                          log.Info(resp.Response.Body)
+                          decoder = json.NewDecoder(resp.Response.Body)
+                        }
+
+                        if resp.Response == nil {
+                          resp, err := getDecisionStream()
+
+                          if err != nil {
+                                  log.Error(err)
+                                  // close the stream
+                                  // this may cause the bouncer to exit
+                                  close(b.Stream)
+                                  return
+                          }
+                          defer resp.Response.Body.Close()
+                        
+                          log.Info(resp)
+                          log.Info(resp.Response)
+                          log.Info(resp.Response.Body)
+                          decoder = json.NewDecoder(resp.Response.Body)
                         }
 
 			// Decode each JSON object
