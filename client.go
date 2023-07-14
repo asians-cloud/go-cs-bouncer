@@ -52,7 +52,6 @@ func (c *Client) StreamDecisionConnect(ctx context.Context, opts apiclient.Decis
   retryClient := retryablehttp.NewClient()
   retryClient.RetryMax = 10
   standardClient := retryClient.StandardClient()
-  standardClient.Timeout = 60 * time.Second
   resp, err := standardClient.Do(req)
   if err != nil {
     return nil, err
