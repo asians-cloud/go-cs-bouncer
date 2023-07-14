@@ -1,7 +1,6 @@
 package csbouncer
 
 import (
-        "time"
         "context"
 	"crypto/tls"
 	"crypto/x509"
