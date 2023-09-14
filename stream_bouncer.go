@@ -230,7 +230,8 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
 			// Decode each JSON object
 			if err := decoder.Decode(data); err != nil {
-				continue
+                          time.Sleep(1 * time.Second)
+                          continue
 			}
 
                         log.Info("Recieved data: ", data)
