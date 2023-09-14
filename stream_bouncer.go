@@ -231,7 +231,6 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 			// Decode each JSON object
 			if err := decoder.Decode(data); err != nil {
 				log.Error("Error decoding JSON:", err)
-                                decoder, resp , err = getDecoder(ctx)
                                 if err != nil {
                                   log.Error(err)
                                   return
