@@ -236,6 +236,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
                         log.Info("Recieved data: ", data)
                         
 			b.Stream <- data
+                        time.Sleep(5 * time.Second)
 		}
 	}
 }
