@@ -213,9 +213,6 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
 	if err != nil {
 		log.Error(err)
-		// close the stream
-		// this may cause the bouncer to exit
-		close(b.Stream)
 		return
 	}
 	for {
@@ -237,7 +234,6 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
                                 decoder, resp , err = getDecoder(ctx)
                                 if err != nil {
                                   log.Error(err)
-                                  close(b.Stream)
                                   return
                                 }
 				continue
