@@ -218,8 +218,6 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		return
 	}
 
-        defer resp.Body.Close()
-
 	for {
 		select {
 		case <-ctx.Done():
