@@ -217,15 +217,22 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 	if err != nil {
 		log.Error(err)
 		return
-	}
+	} else if resp.StatusCode != 200 {
+          log.Errorf("Response status is %d", resp.StatusCode)
+        }
 
         defer resp.Body.Close()
         data := &models.DecisionsStreamResponse{
           New: []*models.Decision{}, 
           Deleted: []*models.Decision{},
         }
-        decoder := json.NewDecoder(resp.Body)
-        err = decoder.Decode(data)
+        event, err := reader.ReadEvent()
+        if err != nil {
+          log.Error(err)
+        }
+
+        err = json.Unmarshal(event, &data)
+
         if err != nil {
           log.Error(err)
         }
