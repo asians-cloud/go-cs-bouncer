@@ -249,10 +249,12 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
 			// Decode each JSON object
                         if err == io.EOF ||  reflect.DeepEqual(event, []byte("[]")) {
+                          log.Error(err, event)
                           continue
                         } else if err != nil {
                           log.Error(err)
                           time.Sleep(500 * time.Millisecond)
+                          reader, resp, err = getDecoder(ctx)
                           continue
 			}
 
@@ -260,6 +262,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
                         if err != nil {
                           log.Error(err)
+                          reader, resp, err = getDecoder(ctx)
                           time.Sleep(500 * time.Millisecond)
                           continue
                         }
