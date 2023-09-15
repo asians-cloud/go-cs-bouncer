@@ -221,28 +221,13 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
           log.Errorf("Response status is %d", resp.StatusCode)
         }
 
-        defer resp.Body.Close()
-        data := &models.DecisionsStreamResponse{
-          New: []*models.Decision{}, 
-          Deleted: []*models.Decision{},
-        }
-        event, err := reader.ReadEvent()
-        if err != nil {
-          log.Error(err)
-        }
-
-        err = json.Unmarshal(event, &data)
-
-        if err != nil {
-          log.Error(err)
-        }
-
-        b.Stream <- data
+        log.Info(resp.StatusCode)
 
 
 	for {
 		select {
 		case <-ctx.Done():
+                  resp.Body.Close()
                   return
 		default:
                         data := &models.DecisionsStreamResponse{
@@ -252,11 +237,8 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
                         event, err := reader.ReadEvent() 
 
-                        log.Info(event)
-
 			// Decode each JSON object
                         if err == io.EOF ||  reflect.DeepEqual(event, []byte("[]")) {
-                          log.Error(err, event)
                           continue
                         } else if err != nil {
                           log.Error(err)
@@ -265,11 +247,15 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
                           continue
 			}
 
+                        // Remove the EOF byte
+                        if len(event) > 0 && event[len(event)-1] == 0x1a {
+                          event = event[:len(event)-1]
+                        }
+
                         err = json.Unmarshal(event, &data)
 
                         if err != nil {
                           log.Error(err)
-                          reader, resp, err = getDecoder(ctx)
                           time.Sleep(500 * time.Millisecond)
                           continue
                         }
