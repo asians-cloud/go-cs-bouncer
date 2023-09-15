@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
         "net/http"
+        "reflect"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -218,13 +219,45 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		return
 	}
 
+        defer resp.Body.Close()
+
+        for {
+          data := &models.DecisionsStreamResponse{
+            New: []*models.Decision{}, 
+            Deleted: []*models.Decision{},
+          }
+
+          event, err := reader.ReadEvent() 
+
+          log.Info(event)
+
+          // Decode each JSON object
+          if err == io.EOF ||  reflect.DeepEqual(event, []byte("[]")) {
+            continue
+          } else if err != nil {
+            log.Error(err)
+            time.Sleep(500 * time.Millisecond)
+            continue
+          }
+
+          err = json.Unmarshal(event, &data)
+
+          if err != nil {
+            log.Error(err)
+            time.Sleep(500 * time.Millisecond)
+            continue
+          }
+
+          log.Info("Recieved data: ", data)
+          
+          b.Stream <- data
+          break
+        }
+
 	for {
 		select {
 		case <-ctx.Done():
-                  if resp != nil {
-                    resp.Body.Close()
-                  }
-		  return
+                  return
 		default:
                         data := &models.DecisionsStreamResponse{
                           New: []*models.Decision{}, 
@@ -236,7 +269,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
                         log.Info(event)
 
 			// Decode each JSON object
-                        if err == io.EOF {
+                        if err == io.EOF ||  reflect.DeepEqual(event, []byte("[]")) {
                           continue
                         } else if err != nil {
                           log.Error(err)
