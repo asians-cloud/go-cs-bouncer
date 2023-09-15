@@ -235,6 +235,8 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
                         event, err := reader.ReadEvent() 
 
+                        log.Info(event)
+
 			// Decode each JSON object
                         if err == io.EOF {
                           continue
