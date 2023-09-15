@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+        log "github.com/sirupsen/logrus"
 )
 
 // EventStreamReader scans an io.Reader looking for EventStream messages.
@@ -57,6 +58,7 @@ func minPosInt(a, b int) int {
 
 // ReadEvent scans the EventStream for events.
 func (e *EventStreamReader) ReadEvent() ([]byte, error) {
+  log.Info(e.scanner.Scan())
 	if e.scanner.Scan() {
 		event := e.scanner.Bytes()
 		return event, nil
