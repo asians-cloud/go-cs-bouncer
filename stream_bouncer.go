@@ -51,6 +51,7 @@ type StreamBouncer struct {
         STREAMClient           *Client
 	UserAgent              string
 	Opts                   apiclient.DecisionsStreamOpts
+        maxBufferSize         int
 }
 
 // Config() fills the struct with configuration values from a file. It is not
@@ -142,6 +143,7 @@ func (b *StreamBouncer) Init() error {
           URL:       b.APIUrl,
           APIKey:    b.APIKey,
           UserAgent: b.UserAgent,
+          maxBufferSize: 1 << 16,
         }
 	return nil
 }
@@ -198,23 +200,26 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 }
 
 func (b *StreamBouncer) RunStream(ctx context.Context) {
-	getDecoder := func(ctx context.Context) (*json.Decoder, *http.Response, error) {
+	getDecoder := func(ctx context.Context) (*EventStreamReader, *http.Response, error) {
 		resp, err := b.STREAMClient.StreamDecisionConnect(ctx, b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
                         return nil, nil, err
 		}
-                decoder := json.NewDecoder(resp.Body)
-		return decoder, resp, err
+                reader := NewEventStreamReader(resp.Body, b.STREAMClient.maxBufferSize)
+		return reader, resp, err
 	}
 
-	decoder, resp, err := getDecoder(ctx)
+        reader, resp, err := getDecoder(ctx)
 
 	if err != nil {
 		log.Error(err)
 		return
 	}
+
+        defer resp.Body.Close()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -228,16 +233,28 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
                           Deleted: []*models.Decision{},
                         }
 
+                        event, err := reader.ReadEvent() 
+
 			// Decode each JSON object
-			if err := decoder.Decode(data); err != nil {
+                        if err == io.EOF {
+                          continue
+                        } else if err != nil {
+                          log.Error(err)
                           time.Sleep(500 * time.Millisecond)
                           continue
 			}
 
+                        err = json.Unmarshal(event, &data)
+
+                        if err != nil {
+                          log.Error(err)
+                          time.Sleep(500 * time.Millisecond)
+                          continue
+                        }
+
                         log.Info("Recieved data: ", data)
                         
 			b.Stream <- data
-                        time.Sleep(500 * time.Millisecond)
 		}
 	}
 }

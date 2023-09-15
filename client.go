@@ -20,6 +20,7 @@ type Client struct {
   URL         string
   APIKey      string
   UserAgent   string
+  maxBufferSize int
 }
 
 func (c *Client) addQueryParamsToURL(url string, opts apiclient.DecisionsStreamOpts) (string, error) {
