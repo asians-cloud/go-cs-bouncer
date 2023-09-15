@@ -220,39 +220,18 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 	}
 
         defer resp.Body.Close()
-
-        for {
-          data := &models.DecisionsStreamResponse{
-            New: []*models.Decision{}, 
-            Deleted: []*models.Decision{},
-          }
-
-          event, err := reader.ReadEvent() 
-
-          log.Info(event)
-
-          // Decode each JSON object
-          if err == io.EOF ||  reflect.DeepEqual(event, []byte("[]")) {
-            continue
-          } else if err != nil {
-            log.Error(err)
-            time.Sleep(500 * time.Millisecond)
-            continue
-          }
-
-          err = json.Unmarshal(event, &data)
-
-          if err != nil {
-            log.Error(err)
-            time.Sleep(500 * time.Millisecond)
-            continue
-          }
-
-          log.Info("Recieved data: ", data)
-          
-          b.Stream <- data
-          break
+        data := &models.DecisionsStreamResponse{
+          New: []*models.Decision{}, 
+          Deleted: []*models.Decision{},
         }
+        decoder := json.NewDecoder(resp.Body)
+        err = decoder.Decode(data)
+        if err != nil {
+          log.Error(err)
+        }
+
+        b.Stream <- data
+
 
 	for {
 		select {
