@@ -221,12 +221,11 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
           log.Errorf("Response status is %d", resp.StatusCode)
         }
 
-        log.Info(resp.StatusCode)
-
 
 	for {
 		select {
 		case <-ctx.Done():
+                  close(b.Stream)
                   resp.Body.Close()
                   return
 		default:
