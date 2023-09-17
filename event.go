@@ -5,69 +5,30 @@
 package csbouncer
 
 import (
-	"bufio"
-	"context"
 	"io"
-        log "github.com/sirupsen/logrus"
 )
 
 // EventStreamReader scans an io.Reader looking for EventStream messages.
 type EventStreamReader struct {
-	scanner *bufio.Scanner
+  reader        *SSEReader 
+  maxBufferSize int
 }
 
 // NewEventStreamReader creates an instance of EventStreamReader.
 func NewEventStreamReader(eventStream io.Reader, maxBufferSize int) *EventStreamReader {
-	scanner := bufio.NewScanner(eventStream)
-	initBufferSize := minPosInt(4096, maxBufferSize)
-	scanner.Buffer(make([]byte, initBufferSize), maxBufferSize)
-
-	split := func(data []byte, atEOF bool) (int, []byte, error) {
-		if atEOF && len(data) == 0 {
-			return 0, nil, nil
-		}
-		// If we're at EOF, we have all of the data.
-		if atEOF {
-			return len(data), data, nil
-		}
-		// Request more data.
-		return 0, nil, nil
-	}
-	// Set the split function for the scanning operation.
-	scanner.Split(split)
-
+        reader := newSSEReader(eventStream)
 	return &EventStreamReader{
-		scanner: scanner,
-	}
-}
-
-// Returns the minimum non-negative value out of the two values. If both
-// are negative, a negative value is returned.
-func minPosInt(a, b int) int {
-	if a < 0 {
-		return b
-	}
-	if b < 0 {
-		return a
-	}
-	if a > b {
-		return b
-	}
-	return a
+          reader:   reader,
+          maxBufferSize: maxBufferSize,
+        }
 }
 
 // ReadEvent scans the EventStream for events.
 func (e *EventStreamReader) ReadEvent() ([]byte, error) {
-  log.Info(e.scanner.Scan())
-	if e.scanner.Scan() {
-		event := e.scanner.Bytes()
-		return event, nil
-	}
-	if err := e.scanner.Err(); err != nil {
-		if err == context.Canceled {
-			return nil, io.EOF
-		}
-		return nil, err
-	}
-	return nil, io.EOF
+  buff := make([]byte, e.maxBufferSize)
+  n, err := e.reader.Read(buff)
+  if err != nil {
+    return nil, err
+  }
+  return buff[:n], nil
 }
