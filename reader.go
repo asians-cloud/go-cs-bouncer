@@ -10,7 +10,9 @@ type SSEReader struct {
 }
 
 func newSSEReader(reader io.Reader) *SSEReader {
-	return &SSEReader{reader: reader}
+	return &SSEReader{
+          reader: reader,
+        }
 }
 
 func alpha(r byte) byte {
