@@ -13,7 +13,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v2"
 
 	"github.com/asians-cloud/crowdsec/pkg/apiclient"
@@ -214,7 +213,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		return reader, resp, err
 	}
 
-	g, _ := errgroup.WithContext(ctx)
+	// g, _ := errgroup.WithContext(ctx)
 
 	// this is the init case, so we have to call it once
 	reader, resp, err := getDecoder(ctx)
@@ -226,44 +225,45 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 	}
 
 	// Produce events
-	g.Go(func() error {
-		defer close(b.Stream)
-		defer resp.Body.Close()
+	// g.Go(func() error {
+	defer close(b.Stream)
+	defer resp.Body.Close()
 
-		for {
-			if evt, err := reader.ReadEvent(); err != nil {
-				if err == io.EOF {
-					continue
-				}
+	for {
+		if evt, err := reader.ReadEvent(); err != nil {
+			if err == io.EOF {
+				continue
+			}
 
-				log.Errorf("Error while reading event, retrying later.. %v", err)
+			log.Errorf("Error while reading event, retrying later.. %v", err)
+			time.Sleep(500 * time.Millisecond)
+			reader, resp, err = getDecoder(ctx)
+			continue
+		} else {
+			if reflect.DeepEqual(evt, []byte("[]")) {
+				continue
+			}
+
+			data := &models.DecisionsStreamResponse{
+				New:     []*models.Decision{},
+				Deleted: []*models.Decision{},
+			}
+
+			err := json.Unmarshal(evt, &data)
+			if err != nil {
+				log.Errorf("Error while parsing event, retrying later.. %v", err)
 				time.Sleep(500 * time.Millisecond)
 				reader, resp, err = getDecoder(ctx)
 				continue
-			} else {
-				if reflect.DeepEqual(evt, []byte("[]")) {
-					continue
-				}
+			}
 
-				data := &models.DecisionsStreamResponse{
-					New:     []*models.Decision{},
-					Deleted: []*models.Decision{},
-				}
-
-				err := json.Unmarshal(evt, &data)
-				if err != nil {
-					log.Errorf("Error while parsing event, retrying later.. %v", err)
-					time.Sleep(500 * time.Millisecond)
-					reader, resp, err = getDecoder(ctx)
-					continue
-				}
-
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case b.Stream <- data:
-				}
+			select {
+			case <-ctx.Done():
+				log.Printf("Received context shutdown, returning..")
+				return
+			case b.Stream <- data:
 			}
 		}
-	})
+	}
+	// })
 }
