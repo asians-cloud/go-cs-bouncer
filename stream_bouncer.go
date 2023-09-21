@@ -266,45 +266,4 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 			}
 		}
 	})
-
-	g.Wait()
-
-	// for {
-	// 	select {
-	// 	case <-ctx.Done():
-	// 		close(b.Stream)
-	// 		resp.Body.Close()
-	// 		return
-	// 	default:
-	// 		data := &models.DecisionsStreamResponse{
-	// 			New:     []*models.Decision{},
-	// 			Deleted: []*models.Decision{},
-	// 		}
-
-	// event, err := reader.ReadEvent()
-
-	// 		// Decode each JSON object
-	// 		if err == io.EOF || reflect.DeepEqual(event, []byte("[]")) {
-	// 			continue
-	// 		} else if err != nil {
-	// 			log.Error(err)
-	// 			time.Sleep(500 * time.Millisecond)
-	// 			reader, resp, err = getDecoder(ctx)
-	// 			continue
-	// 		}
-
-	// 		err = json.Unmarshal(event, &data)
-
-	// 		if err != nil {
-	// 			log.Error(err)
-	// 			time.Sleep(500 * time.Millisecond)
-	// 			reader, resp, err = getDecoder(ctx)
-	// 			continue
-	// 		}
-
-	// 		log.Info("Recieved data: ", data)
-
-	// 		b.Stream <- data
-	// 	}
-	// }
 }

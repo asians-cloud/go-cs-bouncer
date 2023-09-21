@@ -6,6 +6,7 @@ package csbouncer
 
 import (
 	"io"
+        "bytes"
 )
 
 // EventStreamReader scans an io.Reader looking for EventStream messages.
@@ -30,5 +31,8 @@ func (e *EventStreamReader) ReadEvent() ([]byte, error) {
   if err != nil {
     return nil, err
   }
+  buff_non_zero_count := len(buff) - bytes.Count(buff, []byte("\x00"))
+  buff = buff[:buff_non_zero_count]
+  buff = bytes.Trim(buff, "\x1a")
   return buff, nil
 }
