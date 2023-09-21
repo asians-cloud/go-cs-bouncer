@@ -252,7 +252,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 
 				err := json.Unmarshal(evt, &data)
 				if err != nil {
-					log.Errorf("Error while parsing event, retrying later.. %v")
+					log.Errorf("Error while parsing event, retrying later.. %v", err)
 					time.Sleep(500 * time.Millisecond)
 					reader, resp, err = getDecoder(ctx)
 					continue
