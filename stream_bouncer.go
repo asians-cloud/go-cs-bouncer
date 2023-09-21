@@ -214,7 +214,7 @@ func (b *StreamBouncer) RunStream(ctx context.Context) {
 		return reader, resp, err
 	}
 
-	g, groupCtx := errgroup.WithContext(ctx)
+	g, _ := errgroup.WithContext(ctx)
 
 	// this is the init case, so we have to call it once
 	reader, resp, err := getDecoder(ctx)
