@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"time"
-        "net/http"
-        "reflect"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v2"
 
 	"github.com/asians-cloud/crowdsec/pkg/apiclient"
@@ -49,10 +50,10 @@ type StreamBouncer struct {
 	TickerIntervalDuration time.Duration
 	Stream                 chan *models.DecisionsStreamResponse
 	APIClient              *apiclient.ApiClient
-        STREAMClient           *Client
+	STREAMClient           *Client
 	UserAgent              string
 	Opts                   apiclient.DecisionsStreamOpts
-        maxBufferSize         int
+	maxBufferSize          int
 }
 
 // Config() fills the struct with configuration values from a file. It is not
@@ -140,12 +141,12 @@ func (b *StreamBouncer) Init() error {
 		return fmt.Errorf("api client init: %w", err)
 	}
 
-        b.STREAMClient = &Client{
-          URL:       b.APIUrl,
-          APIKey:    b.APIKey,
-          UserAgent: b.UserAgent,
-          maxBufferSize: 1 << 16,
-        }
+	b.STREAMClient = &Client{
+		URL:           b.APIUrl,
+		APIKey:        b.APIKey,
+		UserAgent:     b.UserAgent,
+		maxBufferSize: 1 << 16,
+	}
 	return nil
 }
 
@@ -201,63 +202,109 @@ func (b *StreamBouncer) Run(ctx context.Context) {
 }
 
 func (b *StreamBouncer) RunStream(ctx context.Context) {
+	// getDecoder creates or re-creates the connection to SSE as necessary
 	getDecoder := func(ctx context.Context) (*EventStreamReader, *http.Response, error) {
 		resp, err := b.STREAMClient.StreamDecisionConnect(ctx, b.Opts)
 		TotalLAPICalls.Inc()
 		if err != nil {
 			TotalLAPIError.Inc()
-                        return nil, nil, err
+			return nil, nil, err
 		}
-                reader := NewEventStreamReader(resp.Body, b.STREAMClient.maxBufferSize)
+		reader := NewEventStreamReader(resp.Body, b.STREAMClient.maxBufferSize)
 		return reader, resp, err
 	}
 
-        reader, resp, err := getDecoder(ctx)
+	g, groupCtx := errgroup.WithContext(ctx)
 
+	// this is the init case, so we have to call it once
+	reader, resp, err := getDecoder(ctx)
 	if err != nil {
 		log.Error(err)
 		return
 	} else if resp.StatusCode != 200 {
-          log.Errorf("Response status is %d", resp.StatusCode)
-        }
-
-
-	for {
-		select {
-		case <-ctx.Done():
-                  close(b.Stream)
-                  resp.Body.Close()
-                  return
-		default:
-                        data := &models.DecisionsStreamResponse{
-                          New: []*models.Decision{}, 
-                          Deleted: []*models.Decision{},
-                        }
-
-                        event, err := reader.ReadEvent() 
-
-			// Decode each JSON object
-                        if err == io.EOF ||  reflect.DeepEqual(event, []byte("[]")) {
-                          continue
-                        } else if err != nil {
-                          log.Error(err)
-                          time.Sleep(500 * time.Millisecond)
-                          reader, resp, err = getDecoder(ctx)
-                          continue
-			}
-
-                        err = json.Unmarshal(event, &data)
-
-                        if err != nil {
-                          log.Error(err)
-                          time.Sleep(500 * time.Millisecond)
-                          reader, resp, err = getDecoder(ctx)
-                          continue
-                        }
-
-                        log.Info("Recieved data: ", data)
-                        
-			b.Stream <- data
-		}
+		log.Errorf("Response status is %d", resp.StatusCode)
 	}
+
+	// Produce events
+	g.Go(func() error {
+		defer close(b.Stream)
+		defer resp.Body.Close()
+
+		for {
+			if evt, err := reader.ReadEvent(); err != nil {
+				if err == io.EOF {
+					continue
+				}
+
+				log.Errorf("Error while reading event, retrying later.. %v", err)
+				time.Sleep(500 * time.Millisecond)
+				reader, resp, err = getDecoder(ctx)
+				continue
+			} else {
+				if reflect.DeepEqual(evt, []byte("[]")) {
+					continue
+				}
+
+				data := &models.DecisionsStreamResponse{
+					New:     []*models.Decision{},
+					Deleted: []*models.Decision{},
+				}
+
+				err := json.Unmarshal(evt, &data)
+				if err != nil {
+					log.Errorf("Error while parsing event, retrying later.. %v")
+					time.Sleep(500 * time.Millisecond)
+					reader, resp, err = getDecoder(ctx)
+					continue
+				}
+
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case b.Stream <- data:
+				}
+			}
+		}
+	})
+
+	g.Wait()
+
+	// for {
+	// 	select {
+	// 	case <-ctx.Done():
+	// 		close(b.Stream)
+	// 		resp.Body.Close()
+	// 		return
+	// 	default:
+	// 		data := &models.DecisionsStreamResponse{
+	// 			New:     []*models.Decision{},
+	// 			Deleted: []*models.Decision{},
+	// 		}
+
+	// event, err := reader.ReadEvent()
+
+	// 		// Decode each JSON object
+	// 		if err == io.EOF || reflect.DeepEqual(event, []byte("[]")) {
+	// 			continue
+	// 		} else if err != nil {
+	// 			log.Error(err)
+	// 			time.Sleep(500 * time.Millisecond)
+	// 			reader, resp, err = getDecoder(ctx)
+	// 			continue
+	// 		}
+
+	// 		err = json.Unmarshal(event, &data)
+
+	// 		if err != nil {
+	// 			log.Error(err)
+	// 			time.Sleep(500 * time.Millisecond)
+	// 			reader, resp, err = getDecoder(ctx)
+	// 			continue
+	// 		}
+
+	// 		log.Info("Recieved data: ", data)
+
+	// 		b.Stream <- data
+	// 	}
+	// }
 }
