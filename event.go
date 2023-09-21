@@ -26,9 +26,9 @@ func NewEventStreamReader(eventStream io.Reader, maxBufferSize int) *EventStream
 // ReadEvent scans the EventStream for events.
 func (e *EventStreamReader) ReadEvent() ([]byte, error) {
   buff := make([]byte, e.maxBufferSize)
-  n, err := e.reader.Read(buff)
+  _, err := e.reader.Read(buff)
   if err != nil {
     return nil, err
   }
-  return buff[:n], nil
+  return buff, nil
 }
